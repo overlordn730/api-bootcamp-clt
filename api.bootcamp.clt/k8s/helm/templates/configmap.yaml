@@ -1,0 +1,10 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bootcamp-api-env
+data:
+  ASPNETCORE_ENVIRONMENT: "Development"
+  ASPNETCORE_URLS: "http://+:8080"
+  ApplicationName: "{{ .Values.env.ApplicationName }}"
+  percentDiscount: {{ .Values.env.percentDiscount | quote }}
+  categoriesDiscount: {{ .Values.env.categoriesDiscount | quote }}
