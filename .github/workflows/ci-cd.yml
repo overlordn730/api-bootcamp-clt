@@ -39,7 +39,7 @@ jobs:
 
       - name: Build and Push image
         run: |
-          docker build -t nestorperez007/bootcampclt-api:${{ steps.meta.outputs.tag }} .
+          docker build -t nestorperez007/bootcampclt-api:${{ steps.meta.outputs.tag }} ./api.bootcamp.clt
           docker push nestorperez007/bootcampclt-api:${{ steps.meta.outputs.tag }}
 
   cd:
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy with Helm to Minikube
-        working-directory: k8s/helm
+        working-directory: api.bootcamp.clt/k8s/helm
         shell: cmd
         run: |
           helm upgrade --install bootcamp-api . --set image.tag=${{ needs.ci.outputs.image_tag }}
