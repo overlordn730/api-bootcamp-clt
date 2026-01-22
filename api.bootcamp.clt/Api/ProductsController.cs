@@ -24,10 +24,9 @@ public class ProductsController : Controller
     }
 
     /// <summary>
-    /// Obtiene el detalle de un producto por su identificador.
+    /// Método para obtener todos los productos.
     /// </summary>
-    /// <param name="id">Identificador del producto.</param>
-    /// <returns>Producto encontrado.</returns>
+    /// <returns></returns>
     [HttpGet("v1/api/products")]
     [ProducesResponseType(typeof(IEnumerable<ProductResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
