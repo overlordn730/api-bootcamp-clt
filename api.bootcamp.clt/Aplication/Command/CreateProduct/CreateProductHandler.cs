@@ -25,7 +25,7 @@ namespace api.bootcamp.clt.Aplication.Command.CreateProduct
                 Activo = request.ProductRequest.Activo,
                 CategoriaId = request.ProductRequest.CategoriaId,
                 FechaCreacion = DateTime.UtcNow,
-                CantidadStock = 0  // Puede establecerse en 0 o el valor por defecto que prefieras
+                CantidadStock = 0 
             };
 
             _postgresDbContext.Products.Add(productEntity);

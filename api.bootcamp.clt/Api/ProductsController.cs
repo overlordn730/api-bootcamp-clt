@@ -105,18 +105,14 @@ public class ProductsController : Controller
     {
         try
         {
-            // Crear el comando con los datos recibidos en la solicitud
             var command = new CreateProductCommand(request);
 
-            // Enviar el comando al mediador para ser manejado por el handler
             var result = await _mediator.Send(command);
 
-            // Retornar la respuesta con el estado de "Creado" y los datos del producto creado
             return CreatedAtAction(nameof(CreateProducto), new { id = result.Id }, result);
         }
         catch (Exception ex)
         {
-            // Manejo de errores, si ocurre algún problema
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
         }
     }

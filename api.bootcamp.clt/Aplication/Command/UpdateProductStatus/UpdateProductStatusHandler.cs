@@ -18,27 +18,22 @@
 
         public async Task<ProductResponse> Handle(UpdateProductStatusCommand request, CancellationToken cancellationToken)
         {
-            // Buscar el producto por ID
             var productEntity = await _postgresDbContext.Products
                                                  .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
             if (productEntity == null)
             {
-                // Si no se encuentra el producto, retornar false
                 throw new KeyNotFoundException("Producto no encontrado.");
             }
 
-            // Actualizar el campo 'Activo' si se ha proporcionado
             if (request.Activo.HasValue)
             {
                 productEntity.Activo = request.Activo.Value;
                 productEntity.FechaActualizacion = DateTime.UtcNow;
             }
 
-            // Guardar los cambios en la base de datos
             await _postgresDbContext.SaveChangesAsync(cancellationToken);
 
-            // Devolver la respuesta con los datos del producto actualizado
             return new ProductResponse(
                 productEntity.Id,
                 productEntity.Codigo,
