@@ -49,9 +49,9 @@ public class ProductsController : Controller
             _logger.LogInformation("Productos obtenidos exitosamente.");
             return Ok(products);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            _logger.LogError("Error al obtener los productos.");
+            _logger.LogError(ex, "Error al obtener los productos.");
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error al procesar la solicitud, inténtelo nuevamente más tarde." });
         }        
     }
@@ -85,8 +85,7 @@ public class ProductsController : Controller
         }
         catch (Exception ex) 
         { 
-            _logger.LogError(ex, "Error al obtener el producto con ID {ProductId}", id);
-
+            _logger.LogError(ex, "Error al obtener el producto con ID {ProductId}.", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
         }
         
@@ -105,14 +104,19 @@ public class ProductsController : Controller
     {
         try
         {
+            _logger.LogInformation("Iniciando creación de producto.");
+
             var command = new CreateProductCommand(request);
 
             var result = await _mediator.Send(command);
+
+            _logger.LogInformation("Producto creado exitosamente con ID {ProductId}.", result.Id);
 
             return CreatedAtAction(nameof(CreateProducto), new { id = result.Id }, result);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al crear el producto.");
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
         }
     }
@@ -133,23 +137,29 @@ public class ProductsController : Controller
     {
         try
         {
+
+            _logger.LogInformation("Iniciando actualización del producto con ID {ProductId}.", id);
+
             var result = await _mediator.Send(new UpdateProductCommand(id, request));
+
+            _logger.LogInformation("Producto con ID {ProductId} actualizado exitosamente.", id);
 
             return Ok(result);
         }
         catch (KeyNotFoundException)
         {
+            _logger.LogWarning("Producto con ID {ProductId} no encontrado para actualización.", id);
             return NotFound(new { Message = "No se ha encontrado el producto especificado"});
         }
-        catch(Exception)
+        catch(Exception ex)
         {
+            _logger.LogError(ex, "Error al actualizar el producto con ID {ProductId}.", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error al procesar la solicitud, inténtelo nuevamente más tarde." });
         }
     }
 
     /// <summary>
-    /// Actualiza parcialmente un producto existente.
-    /// Solo se modificarán los campos enviados.
+    /// Método para actualizar el estado de un producto existente.
     /// </summary>
     /// <param name="id">Identificador del producto.</param>
     /// <param name="request">Campos a actualizar.</param>
@@ -164,18 +174,25 @@ public class ProductsController : Controller
     {
         try
         {
+            _logger.LogInformation("Iniciando actualización de estado del producto con ID {ProductId}.", id);
+
             var command = new UpdateProductStatusCommand(id, request.Activo);
 
             var result = await _mediator.Send(command);
+
+
+            _logger.LogInformation("Estado del producto con ID {ProductId} actualizado exitosamente.", id);
 
             return Ok(result);
         }
         catch (KeyNotFoundException)
         {
+            _logger.LogWarning("Producto con ID {ProductId} no encontrado para actualización de estado.", id);
             return NotFound(new { Message = "Producto no encontrado." });
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al actualizar el estado del producto con ID {ProductId}.", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
         }
     }
@@ -192,6 +209,8 @@ public class ProductsController : Controller
     {
         try
         {
+            _logger.LogInformation("Iniciando eliminación del producto con ID {ProductId}.", id);
+
             var result = await _mediator.Send(new DeleteProductCommand(id));
 
             if (!result)
@@ -199,10 +218,13 @@ public class ProductsController : Controller
                 return NotFound(new { Message = "Producto no encontrado." });
             }
 
+            _logger.LogInformation("Producto con ID {ProductId} eliminado exitosamente.", id);
+
             return NoContent();
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error al eliminar el producto con ID {ProductId}.", id); 
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
         }
     }
