@@ -15,11 +15,18 @@ service:
   port: 80
   targetPort: 8080
 
-env:
+serilog:
+  group: "productos"
   ApplicationName: api-bootcamp-clt
-  percentDiscount: "15"
-  categoriesDiscount: "4"
+
+seq:
+  serverUrl: "http://seq.infra"
+  group: "productos"
  
+env:
+  percentDiscount: "30"
+  categoriesDiscount: "4"
+
 postgres:
   host: postgres-svc
   port: 5432

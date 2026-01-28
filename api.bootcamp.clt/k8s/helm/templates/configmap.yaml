@@ -2,9 +2,17 @@
 kind: ConfigMap
 metadata:
   name: bootcamp-api-env
-data:
+data:    
   ASPNETCORE_ENVIRONMENT: "Development"
   ASPNETCORE_URLS: "http://+:8080"
-  ApplicationName: "{{ .Values.env.ApplicationName }}"
+  
+  # App
   percentDiscount: {{ .Values.env.percentDiscount | quote }}
   categoriesDiscount: {{ .Values.env.categoriesDiscount | quote }}
+  
+  # Serilog properties
+  Serilog__Properties__ApplicationName: "{{ .Values.serilog.ApplicationName }}"
+  Serilog__Properties__Group: "{{ .Values.serilog.group }}"
+
+  # Seq
+  Serilog__WriteTo__1__Args__configure__0__Args__serverUrl: "{{ .Values.seq.serverUrl }}"
