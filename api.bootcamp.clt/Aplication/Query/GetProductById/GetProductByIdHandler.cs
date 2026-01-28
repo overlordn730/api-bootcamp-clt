@@ -21,7 +21,7 @@ namespace api.bootcamp.clt.Aplication.Query.GetProductById
 
             if (productEntity == null)
             {
-                return null;
+                throw new KeyNotFoundException($"Producto {request.Id} no encontrado");
             }
 
             return new ProductResponse(

@@ -23,7 +23,7 @@
 
             if (productEntity == null)
             {
-                throw new KeyNotFoundException("Producto no encontrado.");
+                throw new KeyNotFoundException($"Producto con ID {request.Id} no encontrado.");
             }
 
             if (request.Activo.HasValue)

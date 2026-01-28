@@ -4,18 +4,19 @@ using api.bootcamp.clt.Aplication.Command.CreateProduct;
 using api.bootcamp.clt.Aplication.Command.DeleteProduct;
 using api.bootcamp.clt.Aplication.Command.UpdateProduct;
 using api.bootcamp.clt.Aplication.Command.UpdateProductStatus;
-using api.bootcamp.clt.Aplication.Query;
 using api.bootcamp.clt.Aplication.Query.GetProductById;
 using api.bootcamp.clt.Aplication.Query.GetProducts;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 [ApiController]
-public class ProductsController : Controller
+[Route("v1/api/products")]
+public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    public readonly ILogger _logger;
+    private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(IMediator mediator, ILogger<ProductsController> logger)
     {
@@ -23,209 +24,81 @@ public class ProductsController : Controller
         _logger = logger;
     }
 
-    /// <summary>
-    /// Método para obtener todos los productos.
-    /// </summary>
-    /// <returns></returns>
-    [HttpGet("v1/api/products")]
+    [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ProductResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<ProductResponse>>> GetProductoByIdAsync()
+    public async Task<ActionResult<IEnumerable<ProductResponse>>> GetProducts()
     {
-        _logger.LogInformation("Iniciando obtención de productos.");
-        try
-        {
-            var query = new GetProductsQuery();
-            var products = await _mediator.Send(query);
+        var products = await _mediator.Send(new GetProductsQuery());
+        var list = products?.ToList() ?? new List<ProductResponse>();
 
-            if (products == null || products.Count == 0)
-            {
-                _logger.LogWarning("No se encontraron productos.");
-                return NotFound();
-            }
+        _logger.LogInformation("Productos obtenidos: {Count}", list.Count);
 
-            _logger.LogInformation("Productos obtenidos exitosamente.");
-            return Ok(products);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al obtener los productos.");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error al procesar la solicitud, inténtelo nuevamente más tarde." });
-        }        
+        return Ok(list);
     }
 
-    /// <summary>
-    /// Obtiene el detalle de un producto por su identificador.
-    /// </summary>
-    /// <param name="id">Identificador del producto.</param>
-    /// <returns>Producto encontrado.</returns>
-    [HttpGet("v1/api/products/{id:int}")]
+    [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ProductResponse>> GetProductById([FromRoute] int id)
     {
-        try
+        var product = await _mediator.Send(new GetProductByIdQuery(id));
+
+        if (product is null)
         {
-            var query = new GetProductByIdQuery(id);
-
-            var product = await _mediator.Send(query);
-
-            if (product == null)
-            {
-                _logger.LogWarning("Producto con ID {ProductId} no encontrado.", id);
-                return NotFound();
-            }
-
-            _logger.LogInformation("Producto con ID {ProductId} obtenido exitosamente.", id);
-
-            return Ok(product);
+            _logger.LogWarning("Producto con ID {ProductId} no encontrado.", id);
+            return NotFound();
         }
-        catch (Exception ex) 
-        { 
-            _logger.LogError(ex, "Error al obtener el producto con ID {ProductId}.", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
-        }
-        
+
+        return Ok(product);
     }
 
-    /// <summary>
-    /// Crea un nuevo producto.
-    /// </summary>
-    /// <param name="request">Datos del producto a crear.</param>
-    /// <returns>Producto creado.</returns>
-    [HttpPost("v1/api/products")]
+    [HttpPost]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ProductResponse>> CreateProducto([FromBody] CreateProductRequest request)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ProductResponse>> CreateProduct([FromBody] CreateProductRequest request)
     {
-        try
-        {
-            _logger.LogInformation("Iniciando creación de producto.");
-
-            var command = new CreateProductCommand(request);
-
-            var result = await _mediator.Send(command);
-
-            _logger.LogInformation("Producto creado exitosamente con ID {ProductId}.", result.Id);
-
-            return CreatedAtAction(nameof(CreateProducto), new { id = result.Id }, result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al crear el producto.");
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
-        }
+        _logger.LogInformation("Creando producto: {@Request}", request);
+        var result = await _mediator.Send(new CreateProductCommand(request));
+        _logger.LogInformation("Producto creado con ID: {ProductId}", result.Id);
+        return CreatedAtAction(nameof(GetProductById), new { id = result.Id }, result);
     }
 
-    /// <summary>
-    /// Actualiza completamente un producto existente.
-    /// </summary>
-    /// <param name="id">Identificador del producto.</param>
-    /// <param name="request">Datos completos a actualizar.</param>
-    [HttpPut("v1/api/products/{id:int}")]
+    [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ProductResponse>> UpdateProducto(
-        [FromRoute] int id,
-        [FromBody] UpdateProductRequest request)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ProductResponse>> UpdateProduct([FromRoute] int id, [FromBody] UpdateProductRequest request)
     {
-        try
-        {
-
-            _logger.LogInformation("Iniciando actualización del producto con ID {ProductId}.", id);
-
-            var result = await _mediator.Send(new UpdateProductCommand(id, request));
-
-            _logger.LogInformation("Producto con ID {ProductId} actualizado exitosamente.", id);
-
-            return Ok(result);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Producto con ID {ProductId} no encontrado para actualización.", id);
-            return NotFound(new { Message = "No se ha encontrado el producto especificado"});
-        }
-        catch(Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el producto con ID {ProductId}.", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error al procesar la solicitud, inténtelo nuevamente más tarde." });
-        }
+        _logger.LogWarning("Inicia proceso de actualización del {ProductId}.", id);
+        var result = await _mediator.Send(new UpdateProductCommand(id, request));
+        _logger.LogWarning("Inicia proceso de actualización del {ProductId}.", id);
+        return Ok(result);
     }
 
-    /// <summary>
-    /// Método para actualizar el estado de un producto existente.
-    /// </summary>
-    /// <param name="id">Identificador del producto.</param>
-    /// <param name="request">Campos a actualizar.</param>
-    [HttpPatch("v1/api/products/{id:int}")]
+    [HttpPatch("{id:int}/status")]
     [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ProductResponse>> PatchProducto(
-        [FromRoute] int id,
-        [FromBody] PatchProductRequest request)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ProductResponse>> UpdateProductStatus([FromRoute] int id, [FromBody] PatchProductRequest request)
     {
-        try
-        {
-            _logger.LogInformation("Iniciando actualización de estado del producto con ID {ProductId}.", id);
-
-            var command = new UpdateProductStatusCommand(id, request.Activo);
-
-            var result = await _mediator.Send(command);
-
-
-            _logger.LogInformation("Estado del producto con ID {ProductId} actualizado exitosamente.", id);
-
-            return Ok(result);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Producto con ID {ProductId} no encontrado para actualización de estado.", id);
-            return NotFound(new { Message = "Producto no encontrado." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al actualizar el estado del producto con ID {ProductId}.", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
-        }
+        _logger.LogWarning("Inicia proceso de actualización estado del {ProductId}.", id);
+        var result = await _mediator.Send(new UpdateProductStatusCommand(id, request.Activo));
+        _logger.LogWarning("Inicia proceso de actualización estado del {ProductId}.", id);
+        return Ok(result);
     }
 
-    /// <summary>
-    /// Elimina un producto existente.
-    /// </summary>
-    /// <param name="id">Identificador del producto.</param>
-    [HttpDelete("v1/api/products/{id:int}")]
+    [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeleteProducto([FromRoute] int id)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DeleteProduct([FromRoute] int id)
     {
-        try
-        {
-            _logger.LogInformation("Iniciando eliminación del producto con ID {ProductId}.", id);
-
-            var result = await _mediator.Send(new DeleteProductCommand(id));
-
-            if (!result)
-            {
-                return NotFound(new { Message = "Producto no encontrado." });
-            }
-
-            _logger.LogInformation("Producto con ID {ProductId} eliminado exitosamente.", id);
-
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al eliminar el producto con ID {ProductId}.", id); 
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = ex.Message });
-        }
+        _logger.LogWarning("Inicia proceso de eliminación del {ProductId}.", id);
+        await _mediator.Send(new DeleteProductCommand(id));
+        _logger.LogWarning("Finaliza proceso de eliminación del {ProductId}.", id);
+        return NoContent();
     }
 }

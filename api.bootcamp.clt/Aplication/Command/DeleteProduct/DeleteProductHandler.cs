@@ -1,33 +1,29 @@
-﻿using api.bootcamp.clt.Infraestructure.Context;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
+﻿using MediatR;
+using api.bootcamp.clt.Infraestructure.Context;
 
 namespace api.bootcamp.clt.Aplication.Command.DeleteProduct
 {
-    public class DeleteProductHandler : IRequestHandler<DeleteProductCommand, bool>
+    public class DeleteProductHandler : IRequestHandler<DeleteProductCommand, Unit>
     {
-        private readonly PostgresDbContext _postgresDbContext;
+        private readonly PostgresDbContext _context;
 
-        public DeleteProductHandler(PostgresDbContext postgresDbContext)
+        public DeleteProductHandler(PostgresDbContext context)
         {
-            _postgresDbContext = postgresDbContext;
+            _context = context;
         }
 
-        public async Task<bool> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
         {
-            var productEntity = await _postgresDbContext.Products
-                                                 .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+            var product = await _context.Products
+                .FindAsync(new object[] { request.Id }, cancellationToken);
 
-            if (productEntity == null)
-            {
-                return false;
-            }
+            if (product is null)
+                throw new KeyNotFoundException($"Producto con ID {request.Id} no encontrado.");
 
-            _postgresDbContext.Products.Remove(productEntity);
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync(cancellationToken);
 
-            await _postgresDbContext.SaveChangesAsync(cancellationToken);
-
-            return true;
+            return Unit.Value;
         }
     }
 }

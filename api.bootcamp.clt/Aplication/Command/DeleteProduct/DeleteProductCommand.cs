@@ -2,5 +2,5 @@
 
 namespace api.bootcamp.clt.Aplication.Command.DeleteProduct
 {
-    public record DeleteProductCommand(int Id) : IRequest<bool>;
+    public record DeleteProductCommand(int Id) : IRequest<Unit>;
 }
